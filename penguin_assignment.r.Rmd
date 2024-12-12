@@ -1,0 +1,99 @@
+---
+title: "penguin_assignment.r"
+author: "-----"
+date: "2024-12-12"
+output: html_document
+---
+
+```{r setup, echo = FALSE, include=FALSE}
+library(tidyverse)
+library(palmerpenguins)
+library(here)
+library(janitor)
+library(ggplot2)
+```
+
+```{r, echo = FALSE, include=FALSE}
+head(penguins_raw)
+```
+-----------------------------------------
+
+
+--------------------------------------------
+
+
+## QUESTION 2: Data Pipeline
+
+### Introduction
+Comparing the characteristics between sympatric species of penguins may help us to identify and understand population dynamics and species evolution. Comparing flipper length between species allows us to specify possible differences in hunting techniques, swimming characteristics and evolution of behaviours (e.g. diving).
+
+#### Cleaning data
+```{r Data Exploration}
+penguins_clean <- penguins_raw %>%
+  select(-Comments) %>%
+  select(-starts_with("Delta")) %>%
+  clean_names() 
+
+colnames(penguins_clean)
+head(penguins_clean)
+```
+
+### Hypothesis
+T-test of flipper length of Chinstrap vs Gentoo penguins. Null hypothesis: no difference between Chinstraps and Gentoo flipper length. Alternative hypothesis: there is a significant difference between the flipper length of chinstrap and Adelie penguins.
+
+--------------------------------------------
+
+### Statistical Methods
+Using Welch's Two Sample t-test to identify statistical difference of flipper lengths between Chinstraps and Gentoo
+```{r, echo = FALSE, include=FALSE}
+head(penguins_clean)
+print(penguins_clean)
+```
+
+
+```{r Statistics}
+filtered_data <- penguins %>%
+  filter(species %in% c("Gentoo", "Chinstrap"))
+
+t_test_result <- t.test(
+  flipper_length_mm ~ species,
+  data = filtered_data)
+print(t_test_result)
+```
+
+---------------------------------------------
+
+### Plotting results 
+Plotting overlapping scatterplots shows the overall large difference in flipper length between Gentoo and Chrinstrap penguins as well as allows us to see the spread of individual points across each specie.
+```{r Plotting Results, warning=FALSE}
+filtered_data <- subset(penguins, species %in% c("Gentoo", "Chinstrap"))
+
+ggplot(filtered_data, aes(y = species, x = flipper_length_mm, color = species)) +
+  geom_jitter(height = 0.4, size = 2, alpha = 0.6) + 
+  scale_color_manual(values = c("Gentoo" = "red", "Chinstrap" = "blue")) +
+  labs(
+    title = "Species Correlation with Flipper Length",
+    x = "Flipper Length (mm)",
+    y = "Species",
+    color = "Species"
+  ) +
+  theme_minimal()
+
+```
+
+### Conclusion
+Using Welch’s two-sample t-test to compare flipper lengths of Chinstrap and Gentoo penguin, our results have shown Chinstrap penguins have a significantly smaller flippers than Gentoo. The very small p-value suggests we should fail to accept the null hypothesis, suggesting the difference in means between the two species is significantly significant. As well as this, the scatterplot shows us that across all individuals there is very little overlap in flipper length between the two species. The highly significant statistcal difference in mean flipper length could relate to differing swimming and hunting strategies. Gentoo penguins are much faster in swimmers as well as this Gentoo penguins perform deeper and longer dives than Chinstraps, which may be enabled by the longer flippers that may provide more power per stroke. 
+
+------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------
+
+## QUESTION 3: Open Science
+
+
+
+
+
+
+## Bibliography
