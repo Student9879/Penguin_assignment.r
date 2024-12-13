@@ -1,0 +1,214 @@
+---
+title: "Investigating Palmer penguin dataset"
+author: "-----"
+date: "2024-12-12"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+#Install packages
+library(tidyverse)
+library(palmerpenguins)
+library(ggplot2)
+library(here)
+library(janitor)
+```
+
+------------------------
+
+## QUESTION 01: Data Visualisation for Science Communication
+
+Appropriately cleaning the data 
+```{r}
+head(penguins_raw)
+write.csv(penguins_raw, "datafiles/penguins_raw.csv", row.names = FALSE) 
+```
+```{r cleaning headings}
+# Cleaning the data column names
+penguins_clean <- penguins_raw %>%
+  select(-Comments) %>%
+  select(-starts_with("Delta")) %>%
+  clean_names() 
+write.csv(penguins_clean, "datafiles/penguins_clean.csv", row.names = FALSE) 
+
+colnames(penguins_clean)
+```
+
+-----------------------------
+
+### a) Bad figure plot
+This figure shows the difference in mean culmen length in penguins across three different islands.
+```{r bad figure code2}
+# Working out mean culmen length of each island
+data <- data.frame(penguins_clean)
+mean_culmen_length <- aggregate(culmen_length_mm ~ island, data = data, mean)
+print(mean_culmen_length)
+
+# Plotting data onto a bar graph using bad colour and background choices
+ggplot(mean_culmen_length, aes(x = island, y = culmen_length_mm, fill = island)) +
+  geom_bar(stat = "identity") + 
+  labs(title = "Mean Culmen Length on different Islands", 
+       x = "Island", 
+       y = "Mean Culmen Length (mm)") +
+  scale_y_continuous(
+    limits = c(0, 50),
+    breaks = seq(0, 50, 5) 
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none", panel.background = element_rect(fill = "grey60"))
+```
+
+
+### b) Write about how your design choices mislead the reader about the underlying data.
+
+The data suggests that there is an overall difference between mean culmen length of the different islands with highest culmen length in penguins living on Biscoe island and lowest mean on Torgersen. This graphic visually exudes interpretation from those with colour difficiencies especially red-green blindness. This means that those with this deficiency may not be able to distinguish between the biscoe and dream plots especiallly considering the red and green of the plot are of similar lightness as well. Furthermore, the grey background makes the plots blend into the background making the data plot undetectable. Finally, the grid lines make make any possibility of distinuishing the plots based on outline more difficiult as the line of the plot is visulal competing with the grid lines (Crameri, 2020).
+
+In addition, this graphic has grouped variables such as sex, species type and number of individuals in each species on said island. This could skew the results and culmen length may differ between sex as well as species and there may be more of a certain sex or species type on different islands that provides with the result rather than being a result of adaptation to the island as the graph suggests. The graph also only contains the mean and doesn't show the entire spread and therefore variation in range culmen length which may provide us with information on outliers, overlap between islands and distribution of spread.
+
+---------------
+
+
+---------------
+
+
+## QUESTION 2: Data Pipeline
+
+### Introduction
+Comparing the characteristics between sympatric species of penguins may help us to identify and understand population dynamics and species evolution. Comparing flipper length between species allows us to specify possible differences in hunting techniques, swimming characteristics and evolution of behaviours (e.g. diving duration). Primitively, we can suggest that the flipper length between Gentoo and Chinstrap penguins is very different when considering the mean length of Gentoo = 217mm and mean length of chinstrap = 196mm. The data set will be statistically analysed using Welch's t-test to ensure significant difference and then plotted into graph to visualize the results.
+
+
+```{r installing packages}
+#Install packages
+library(tidyverse)
+library(palmerpenguins)
+library(janitor)
+library(here)
+library(ggplot2)
+```
+
+```{r Raw data, echo = FALSE, include=FALSE}
+head(penguins_raw)
+```
+-----------------------------------------
+
+
+--------------------------------------------
+
+
+#### Cleaning data
+```{r Data Cleaning}
+# Cleaning data column names
+penguins_clean <- penguins_raw %>%
+  select(-Comments) %>%
+  select(-starts_with("Delta")) %>%
+  clean_names() 
+
+colnames(penguins_clean)
+head(penguins_clean)
+```
+
+------------------------------------------
+
+### Hypothesis
+T-test of flipper length of Chinstrap vs Gentoo penguins. Null hypothesis: no difference between Chinstraps and Gentoo flipper length. 
+Alternative hypothesis: there is a significant difference between the flipper length of Chinstrap and Gentoo penguins.
+
+--------------------------------------------
+
+### Statistical Methods
+Using Welch's Two Sample t-test to identify if there is statistical difference of flipper lengths between Chinstraps and Gentoo penguins. Use of Welch's t-test as it more robust for my data set. For example, it doesn't assume equal variances in the two datasets such as unequal sample sizes of each group and it performs better with large datasets. From these results we can infer whether to accept or fail to accept the null hypothesis.
+```{r}
+head(penguins_clean)
+print(penguins_clean)
+```
+
+
+```{r Statistics}
+# Filtering the species and data set to only flipper length of Chinstrap and Gentoo.
+filtered_data <- penguins %>%
+  filter(species %in% c("Gentoo", "Chinstrap"))
+
+t_test_result <- t.test(
+  flipper_length_mm ~ species,
+  data = filtered_data)
+print(t_test_result)
+```
+
+---------------------------------------------
+
+### Plotting results 
+Plotting overlapping scatterplots shows the overall sizable difference in flipper length between Gentoo and Chinstrap penguins as well as allows us to see the spread of individual points across each specie to help interpretation of the results found in the Welch's t-test.
+```{r Plotting Results, warning=FALSE}
+# Plotting filtered data onto a scatter graph 
+filtered_data <- subset(penguins, species %in% c("Gentoo", "Chinstrap"))
+
+ggplot(filtered_data, aes(y = species, x = flipper_length_mm, color = species)) +
+  geom_jitter(height = 0.4, size = 2, alpha = 0.6) + 
+  scale_color_manual(values = c("Gentoo" = "violet", "Chinstrap" = "blue")) +
+  labs(
+    title = "Species Correlation with Flipper Length",
+    x = "Flipper Length (mm)",
+    y = "Species",
+    color = "Species"
+  ) +
+  theme_minimal()
+
+```
+
+
+### Conclusion
+Using Welch’s two-sample t-test to compare flipper lengths of Chinstrap and Gentoo penguin, our results have shown Chinstrap penguins have a significantly smaller flippers than Gentoo. The very small p-value suggests we should fail to accept the null hypothesis, suggesting the difference in means between the two species is significantly significant. As well as this, the scatterplot shows us that across all individuals there is very little overlap in flipper length between the two species. The highly significant statistcal difference in mean flipper length could relate to differing swimming and hunting strategies. Gentoo penguins are much faster in swimmers as well as this Gentoo penguins perform deeper and longer dives than Chinstraps, which may be enabled by the longer flippers that may provide more power per stroke (Clewlow, 2019, Chung 2021).
+
+------------------------------------------------------------
+
+
+
+
+
+
+
+
+------------------------------------------------------------
+
+## QUESTION 3: Open Science
+
+My GitHub link: https://github.com/Student9879/Penguin_assignment.r.git
+Partner's GitHub link: https://github.com/creatormysterious/penguinprojectbaby.git 
+
+### Review on running partner's code
+*What elements of your partner's code helped you to understand and run their data pipeline?*
+The use of comments, using a hashtag within the code chunks enabled understanding of each individual line or lines of code helping understanding of where each plot is coming from 
+
+*Did it run? Did you need to fix anything?*
+Yes it did run so i didn't need to fix anything.
+
+*What suggestions would you make for improving their code to make it more understandable or reproducible, and why?*
+The sections need to be more clearly laid out with an overall title showing what each section is about before using subheadings for individual chunks of code within that section. Also use of breaks was needed to more clearly separate out sections. Furthermore, there was large gaps between the end of the code and the closing '''' which made it slightly confusing as to when the code for that section stopped. I would suggest leaving only 1 or 2 lines between end code and closing the chunk. Finally, reducing bulky code to more simplified and condensed lines of code (that function the same way) would help understanding. 
+
+
+*If you needed to alter your partner's figure using their code, do you think that would be easy or difficult, and why?*
+Reproducing my partner's code would be relatively easy due to the labeling of each line of code with annotation, however it would be easier if their codes were less bulky and reorganised into more distinct, better defined sections.
+
+##### Reflection on own code
+I learned that in order to make each code easier to understand what I have done and why, I need to embed annotations within code chunks that describes and specifies function of my individual lines of code as well as not repeat my self across different sections. In reflection, to ensure my code is reproducible, testing my code on other devices highlights problem areas in my code such as using a working directory specific to my Mac which caused problems when testing on other devices with differing working directories.
+
+
+##### The main barriers for scientists sharing their data and how can these be resolved 
+
+Sharing data is an efficient and cooperative way to advance research however, in a random survey of 1001 papers, Maintner et al found that on;y 4.9% of publications provided their code as well as other studies suggesting 81% of researchers don't provide their code.
+This is due to the different levels of coding ability among researchers which prevent some researchers from publishing their work as an error in code may lead to questioning validity of published work as it isn't reproducible (Trisovi, 2022). The on top of this with large data sets and less experianced researchers, the prolonged time it takes for preparing, cleaning and correcting errors in code data set may create barriers for scientists sharing their data. In addition, some data sets are very large so need to be broken down into subsets in order for better understanding across researchers. Finally, there are issues of misuse and misinterpreting of the data. For example a well known case, collegues and coauthors of academic Jonathon Pruitt (who had a large number of publications), found that he had misrepresented or possibly falsified the data they had collected (Treleaven, 2024). There has been an increase in the number of retracted papers (due to fraud or misuse) has increased from 44 to 488 between 1996-2016 so it is understandable that researchers could be concerned about use of the data. This could possibly be overcome by setting access rights (software liscenses) whereby data used must be approved by publisher (Gomes, 2022).
+
+------------------------------------------
+
+
+
+#### Bibliography
+Crameri, F., Shephard, G.E. & Heron, P.J. The misuse of colour in science communication. Nat Commun 11, 5444 (2020). https://doi.org/10.1038/s41467-020-19160-7
+Clewlow HL, Takahashi A, Watanabe S, Votier SC, Downie R, Ratcliffe N. Niche partitioning of sympatric penguins by leapfrog foraging appears to be resilient to climate change. J Anim Ecol. 2019; 88: 223–235. https://doi.org/10.1111/1365-2656.12919
+
+Lee, W. Y., Park, S., Kim, K. W., Kim, J. H., Gal, J. K., & Chung, H. (2021). Inter-Specific and Intra-Specific Competition of Two Sympatrically Breeding Seabirds, Chinstrap and Gentoo Penguins, at Two Neighboring Colonies. Animals : an open access journal from MDPI, 11(2), 482. https://doi.org/10.3390/ani11020482
+Trisovic A, Lau MK, Pasquier T, Crosas M (2022) A large-scale study on research code quality and execution. Scientific Data 9:60. https://doi.org/10.1038/s41597-022-01143-6
+Brian Maitner, Paul Santos-Andrade, Luna Lei et al. Code sharing increases citations, but remains uncommon, 04 August 2023, PREPRINT (Version 1) available at Research Square https://doi.org/10.21203/rs.3.rs-3222221/v1
+Sarah Treleaven 2024 https://thewalrus.ca/a-rock-star-researcher-spun-a-web-of-lies-and-nearly-got-away-with-it/
+Gomes, D. G. E., Pottier, P., Crystal‐Ornelas, R., Hudgins, E. J., Foroughirad, V., Sánchez‐Reyes, L. L., … & Gaynor, K. M. (2022). Why don't we share data and code? perceived barriers and benefits to public archiving practices. Proceedings of the Royal Society B: Biological Sciences, 289(1987). https://doi.org/10.1098/rspb.2022.1113
